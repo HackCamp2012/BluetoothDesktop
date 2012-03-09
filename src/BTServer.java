@@ -17,36 +17,54 @@ public class BTServer  implements Runnable{
 	private boolean listening=true;
 	private boolean active=true;
 	private StreamConnection con;
+	private InputStream is;
 	public BTServer(){
 		
 	}
 	
 	public void init() throws IOException {
 		Thread t = new Thread(this);
-		t.start();
+		
+		LocalDevice.getLocalDevice().setDiscoverable(DiscoveryAgent.GIAC);
+		
+		StreamConnectionNotifier service =  (StreamConnectionNotifier) Connector.open( "btspp://localhost:" + SERVICEUUID + ";name=RemoteHCIServer" );
+		
+		while (active){
+            con = (StreamConnection) service.acceptAndOpen();
+            t.start();
+            is = con.openInputStream();
+            System.out.println("Connection Received");
+            this.send("hello from Server".getBytes());
+            try {
+				t.join();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		
+		}
+		
+		
 		
 	}
 
 	@Override
 	public void run() {
+		System.out.println("now listening in new thread");
 		try {
-			LocalDevice.getLocalDevice().setDiscoverable(DiscoveryAgent.GIAC);
-		
-			StreamConnectionNotifier service =  (StreamConnectionNotifier) Connector.open( "btspp://localhost:" + SERVICEUUID + ";name=RemoteHCIServer" );
+            while (listening){
+            	byte[] recv= new byte[1024];
+            	is.read(recv);
+            	
+            	String s = new String(recv, 0, recv.length);
+            	if (s.equals("")){
+            		System.out.println("disconnected");
+            		listening=false;
+            		break;
+            	}
+            	System.out.println("rec: "+s);
+            }
 			
-			while (active){
-	            con = (StreamConnection) service.acceptAndOpen();
-	            InputStream is = con.openInputStream();
-	            System.out.println("Connection Received");
-	            this.send("hello from Server".getBytes());
-	            while (listening){
-	            	byte[] recv= new byte[1024];
-	            	is.read(recv);
-	            	String s = new String(recv, 0, recv.length);
-	            	System.out.println("rec: "+s);
-	            }
-				
-			}
+
 		} catch (BluetoothStateException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -58,6 +76,8 @@ public class BTServer  implements Runnable{
 	public void send(byte[] b) throws IOException{
         OutputStream os = con.openOutputStream();
         os.write(b);
+        os.flush();
+        
 	}
 }
 
