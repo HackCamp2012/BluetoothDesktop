@@ -1,3 +1,5 @@
+import java.io.IOException;
+
 
 
 public class Main {
@@ -5,6 +7,12 @@ public class Main {
 		
 		//BTDiscovery btd = new BTDiscovery();
 		//btd.discover();
-		
+		BTServer s=new BTServer();
+		try {
+			s.init();
+		} catch (IOException e) {
+
+			e.printStackTrace();
+		}
 	}
 }
