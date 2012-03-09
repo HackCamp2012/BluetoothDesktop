@@ -26,7 +26,7 @@ public class BTRequestHandler extends ServerRequestHandler{
 				buf.append((char) data);
 			}
 			
-			System.out.println("got "+buf.toString());BTRequestHandler
+			System.out.println("got "+buf.toString());
 			
 			op.close();
 			return ResponseCodes.OBEX_HTTP_OK;
