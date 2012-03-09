@@ -1,5 +1,6 @@
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.security.GuardedObject;
 
@@ -17,6 +18,7 @@ public class BTServer  implements Runnable{
 	private boolean listening=true;
 	private boolean active=true;
 	private StreamConnection con;
+	
 	private InputStream is;
 	public BTServer(){
 		
@@ -31,7 +33,12 @@ public class BTServer  implements Runnable{
 		
 		while (active){
             con = (StreamConnection) service.acceptAndOpen();
-            t.start();
+            if (t.isAlive()){
+            	this.notifyAll();
+            }else{
+            	t.start();            	
+            }
+            
             is = con.openInputStream();
             System.out.println("Connection Received");
             this.send("hello from Server".getBytes());
@@ -50,10 +57,13 @@ public class BTServer  implements Runnable{
 	@Override
 	public void run() {
 		System.out.println("now listening in new thread");
+		
 		try {
             while (listening){
             	byte[] recv= new byte[1024];
-            	is.read(recv);
+            	if (is.read(recv)==-1){
+            		break;
+            	}
             	
             	String s = new String(recv, 0, recv.length);
             	if (s.equals("")){
@@ -73,6 +83,7 @@ public class BTServer  implements Runnable{
 		
 	}	
 
+	
 	public void send(byte[] b) throws IOException{
         OutputStream os = con.openOutputStream();
         os.write(b);
